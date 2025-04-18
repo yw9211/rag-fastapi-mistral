@@ -69,7 +69,13 @@ def process_pdf_files(filename, content):
 
     Returns:
         list[str]: List of text chunks extracted from the PDF.
+
+    Raises:
+        ValueError: If the uploaded file is not a PDF.
     """
+    if not filename.lower().endswith(".pdf"):
+        raise ValueError(f"Invalid file type for '{filename}'. Only PDF files are supported.")
+
     path = save_pdf_temp(filename, content)
     text = extract_text_from_pdf(path)
     chunks = chunk_text(text)
