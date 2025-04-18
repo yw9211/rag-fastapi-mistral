@@ -1,10 +1,6 @@
 import os
 from PyPDF2 import PdfReader
 
-# Global config for chunking (characters)
-CHUNK_SIZE = 500  
-OVERLAP_SIZE = 100  
-
 def save_pdf_temp(filename, content):
     """
     Save uploaded PDF content to a local file in the 'data/' directory.
@@ -38,7 +34,7 @@ def extract_text_from_pdf(path):
         text += page.extract_text() or ""
     return text
 
-def chunk_text(text, chunk_size=CHUNK_SIZE, overlap=OVERLAP_SIZE):
+def chunk_text(text, chunk_size=500, overlap=100):
     """
     Split a string of text into overlapping chunks.
 
@@ -59,7 +55,7 @@ def chunk_text(text, chunk_size=CHUNK_SIZE, overlap=OVERLAP_SIZE):
         start += chunk_size - overlap 
     return chunks
 
-def process_pdf_files(filename, content):
+def process_pdf_files(filename, content, chunk_size=500, overlap=100):
     """
     Complete pipeline to process a PDF: save, extract text, and chunk.
 
@@ -69,13 +65,7 @@ def process_pdf_files(filename, content):
 
     Returns:
         list[str]: List of text chunks extracted from the PDF.
-
-    Raises:
-        ValueError: If the uploaded file is not a PDF.
     """
-    if not filename.lower().endswith(".pdf"):
-        raise ValueError(f"Invalid file type for '{filename}'. Only PDF files are supported.")
-
     path = save_pdf_temp(filename, content)
     text = extract_text_from_pdf(path)
     chunks = chunk_text(text)

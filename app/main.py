@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query
 from sentence_transformers import SentenceTransformer
 from app.ingestion import process_pdf_files
 from app.mistral_utils import is_search_query_llm, transform_query
@@ -12,7 +12,11 @@ model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # Define a POST endpoint at /upload to receive PDF files
 @app.post("/upload")
-async def upload_files(files: list[UploadFile] = File(...)):
+async def upload_files(
+    files: list[UploadFile] = File(...),
+    chunk_size: int = Query(500, description="Number of characters per chunk"),
+    overlap: int = Query(100, description="Number of overlapping characters per chunk"),
+):
     results = []
     for file in files:
         if not file.filename.lower().endswith(".pdf"):
@@ -23,14 +27,16 @@ async def upload_files(files: list[UploadFile] = File(...)):
         # Read file content asynchronously
         content = await file.read()
         # Extract and chunk text from the PDF
-        chunks = process_pdf_files(file.filename, content)
+        chunks = process_pdf_files(file.filename, content, chunk_size=chunk_size, overlap=overlap)
         # Embed all chunks at once
         embeddings = model.encode(chunks).tolist()
         add_chunks(file.filename, chunks, embeddings)
         # Store the filename and number of chunks for this file
         results.append({
             "filename": file.filename,
-            "chunks_created": len(chunks)
+            "chunks_created": len(chunks),
+            "chunk_size": chunk_size,
+            "overlap": overlap
         })
     # Return a JSON response with a summary of the operation
     return {"status": "success", "files": results}
