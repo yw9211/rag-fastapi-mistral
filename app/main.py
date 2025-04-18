@@ -43,7 +43,7 @@ async def query_knowledge_base(question: str = Form(...)):
 
     # Step 2: Decide if KB search is needed (TODO: waiting on API key)
     # use_kb = is_search_query_llm(transformed)
-    use_kb = False
+    use_kb = True
 
     # Step 3: If no KB needed, just ask LLM directly (TODO: waiting on API key)
     if not use_kb:
@@ -56,7 +56,9 @@ async def query_knowledge_base(question: str = Form(...)):
     top_chunks = search_chunks(transformed, top_k=3)
     context = "\n\n".join([chunk["text"] for chunk in top_chunks])
 
-    # Step 5: Ask LLM with extra context (TODO: waiting on API key)
+    # Step 5: Post-processing
+
+    # Step 6: Ask LLM with extra context (TODO: waiting on API key)
     # response = generate_response(query=transformed, context=context)
     return {
         "response": f"(LLM would answer using context: '{transformed}')",
