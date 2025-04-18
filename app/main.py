@@ -4,6 +4,7 @@ from app.ingestion import process_pdf_files
 from app.mistral_utils import is_search_query_llm, transform_query
 from app.storage import add_chunks  
 from app.search import search_chunks
+from app.postprocessing import deduplicate_chunks, rerank_chunks, truncate_chunks
 
 # Create FastAPI instance
 app = FastAPI()
@@ -59,17 +60,20 @@ async def query_knowledge_base(question: str = Form(...)):
         }
 
     # Step 4: Search the knowledge base
-    top_chunks = search_chunks(transformed, top_k=3)
-    context = "\n\n".join([chunk["text"] for chunk in top_chunks])
+    top_chunks = search_chunks(transformed, top_k=5)
 
     # Step 5: Post-processing
+    top_chunks = deduplicate_chunks(top_chunks)
+    top_chunks = rerank_chunks(top_chunks, transformed)
+    top_chunks = truncate_chunks(top_chunks, max_chars=3000)
+    context = "\n\n".join([chunk["text"] for chunk in top_chunks])
 
     # Step 6: Ask LLM with extra context (TODO: waiting on API key)
     # response = generate_response(query=transformed, context=context)
     return {
         "response": f"(LLM would answer using context: '{transformed}')",
         "used_knowledge_base": True,
-        "context_preview": context[:1000],
+        "context_preview": context,
         "sources": [chunk["filename"] for chunk in top_chunks]
     }
 

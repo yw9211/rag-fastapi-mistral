@@ -73,6 +73,7 @@ def search_chunks(query: str, top_k: int = 5) -> List[Dict]:
 
     all_chunks = get_all_chunks()
     filtered_chunks = filter_chunks_by_keywords(all_chunks, keywords)
+
     candidate_chunks = filtered_chunks if filtered_chunks else all_chunks
 
     scored = []
