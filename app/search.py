@@ -1,11 +1,9 @@
-from sentence_transformers import SentenceTransformer
+from app.embedding_model import embedding_model as model
 import numpy as np
 import re
 from nltk.corpus import stopwords
 from typing import List, Dict
 from app.storage import get_all_chunks
-
-model = SentenceTransformer("all-MiniLM-L6-v2")
     
 def cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
     """
