@@ -42,13 +42,13 @@ async def upload_files(
 
 @app.post("/query")
 async def query_knowledge_base(question: str = Form(...)):
-    # Step 1: Transform the query for clarity (TODO: waiting on API key)
-    #transformed = transform_query(question)
-    transformed = question
+    # Step 1: Transform the query for clarity 
+    transformed = transform_query(question)
+    print("-- transformed ---")
+    print(transformed)
 
-    # Step 2: Decide if KB search is needed (TODO: waiting on API key)
-    # use_kb = is_search_query_llm(transformed)
-    use_kb = True
+    # Step 2: Decide if KB search is needed 
+    use_kb = is_search_query_llm(transformed)
 
     # Step 3: If no KB needed, just ask LLM directly (TODO: waiting on API key)
     if not use_kb:

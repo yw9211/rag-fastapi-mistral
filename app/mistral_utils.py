@@ -2,7 +2,10 @@ import os
 from mistralai import Mistral
 
 # Initialize the Mistral client with your API key
-client = Mistral(api_key="gwGmq0uYH2PWtj3ZnuNpDXeCgtqaXnOf")
+# client = Mistral(api_key="6ArEcq2epyMkLjd4MpLZ1BMeEJl0OOhn")
+api_key = os.environ["MISTRAL_API_KEY"]
+model = "mistral-small-latest"
+client = Mistral(api_key=api_key)
 
 # System prompt guiding the LLM to classify query intent
 INTENT_PROMPT = (
@@ -24,17 +27,18 @@ def is_search_query_llm(user_input: str) -> bool:
     """
     messages = [
         {"role": "system", "content": INTENT_PROMPT},
-        {"role": "user", "content": user_input}
+        {"role": "user", "content": user_input},
     ]
 
-    response = client.chat.complete(model="mistral-small-latest", messages=messages)
+    response = client.chat.complete(model=model, messages=messages)
     answer = response.choices[0].message.content.strip().lower()
     return answer.startswith("yes")
 
 # System prompt guiding the LLM to improve query for RAG
 REWRITE_PROMPT = (
-    "You are a retrieval assistant. Given a user input, rephrase it into a clear, standalone question "
-    "optimized for semantic search over a business knowledge base. Do not add fluff."
+    "You are a text cleaner. Your job is to rewrite user queries to improve grammar, clarity, and spelling "
+    "while preserving the original meaning. Do not change the intent. "
+    "Respond with the cleaned query only — no explanation, no formatting, no prefix."
 )
 
 def transform_query(query: str) -> str:
@@ -53,5 +57,5 @@ def transform_query(query: str) -> str:
         {"role": "system", "content": REWRITE_PROMPT},
         {"role": "user", "content": query}
     ]
-    response = client.chat.complete(model="mistral-small-latest", messages=messages)
+    response = client.chat.complete(model=model, messages=messages)
     return response.choices[0].message.content.strip()
