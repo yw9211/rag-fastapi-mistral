@@ -1,5 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query
-from sentence_transformers import SentenceTransformer
+from app.embedding_model import embedding_model as model
 from app.ingestion import process_pdf_files
 from app.mistral_utils import is_search_query_llm, transform_query
 from app.storage import add_chunks  
@@ -8,8 +8,6 @@ from app.postprocessing import deduplicate_chunks, rerank_chunks, truncate_chunk
 
 # Create FastAPI instance
 app = FastAPI()
-
-model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # Define a POST endpoint at /upload to receive PDF files
 @app.post("/upload")

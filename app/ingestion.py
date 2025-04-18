@@ -1,5 +1,5 @@
 import os
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 
 def save_pdf_temp(filename, content):
     """
@@ -20,7 +20,7 @@ def save_pdf_temp(filename, content):
 
 def extract_text_from_pdf(path):
     """
-    Extract all text from a PDF file using PyPDF2.
+    Extract all text from a PDF file using pypdf.
 
     Args:
         path (str): File path to the PDF.
