@@ -84,7 +84,7 @@ This modular setup allows for easy substitution of models, reranking strategies,
   ]
 }
 ```
-
+---
 ### `/query` — Ask a Question
 
 **Method:** `POST`  
@@ -95,7 +95,7 @@ This modular setup allows for easy substitution of models, reranking strategies,
 | Parameter     | Type         | Required | Description                                          |
 |---------------|--------------|----------|------------------------------------------------------|
 | `question`    | string       | Yes      | The user’s input question                            |
-
+---
 ### `/debug_query` — Trace a Query
 
 **Method:** `POST`  
