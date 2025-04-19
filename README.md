@@ -1,6 +1,6 @@
 # Retrieval-Augmented Generation (RAG) with FastAPI and Mistral
 
-This project implements a simple RAG (Retrieval-Augmented Generation) pipeline using **FastAPI**, **SentenceTransformers**, and the **Mistral AI API**. The system allows users to upload PDFs, process them into retrievable text chunks, and then query the knowledge base with enhanced natural language questions.
+This project implements a simple RAG (Retrieval-Augmented Generation) pipeline using **FastAPI** and the **Mistral AI API**. The system allows users to upload PDFs, process them into retrievable text chunks, and then query the knowledge base with enhanced natural language questions.
 
 ## Project Structure
 ```
@@ -12,7 +12,6 @@ rag-fastapi-mistral/
 │   ├── search.py              # Hybrid search 
 │   ├── postprocessing.py      # Deduplication, truncation
 │   ├── mistral_utils.py       # Mistral API integration (transform, classify, generate)
-│   ├── embedding_model.py     # Singleton model loader for SentenceTransformers
 │   └── storage.py             # In-memory store of chunk metadata and embeddings
 │
 ├── tests/
@@ -28,21 +27,27 @@ rag-fastapi-mistral/
 ## System Design
 
 
+This modular setup allows for easy substitution of models, reranking strategies, or chunking methods without rewriting core components.
+
 ### Key Design Choices
+
+- **No external RAG or search libraries used**  
+  All retrieval, chunk embedding, similarity scoring, and reranking logic is implemented manually using only the official Mistral SDK — no third-party libraries were used.
 
 - **No third-party vector database**  
   Embeddings are stored in memory and scored manually using cosine similarity for transparency and flexibility.
 
 - **Weighted hybrid search**  
-  Combines semantic similarity with keyword overlap using a tunable `alpha` parameter. This balances relevance and conceptual coverage.
+  Initially implemented as keyword filtering followed by semantic search, the retrieval strategy was redesigned into a weighted scoring model after evaluation showed that filtering excluded important chunks. The final approach combines semantic similarity and keyword overlap using a tunable `alpha` parameter (default: `0.75`), selected by testing various values on representative files and queries to optimize both accuracy and file diversity.
 
 - **Modular filtering**  
-  Post-processing steps (e.g., deduplication, truncation) are cleanly separated to allow experimentation.
+  Post-processing steps like deduplication and truncation are cleanly separated to allow experimentation. Deduplication removes identical chunks (often introduced when the same file is uploaded more than once) to avoid biasing the context and wasting tokens. Truncation ensures the total context stays within token limits, especially when users choose larger chunk sizes.
 
 - **LLM-enhanced query handling**  
   The system uses Mistral to:
   - Rewrite queries for clarity
   - Classify intent (whether to trigger retrieval)
+  - Embed queries and document chunks using `mistral-embed` for semantic search
   - Generate final answers with or without context
 
 - **Debug-first development**  
