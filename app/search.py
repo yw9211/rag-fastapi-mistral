@@ -36,49 +36,38 @@ def extract_keywords(text: str) -> List[str]:
     tokens = re.findall(r'\b\w+\b', text.lower())
     return [token for token in tokens if token not in STOPWORDS and len(token) > 2]
 
-def filter_chunks_by_keywords(chunks: List[Dict], keywords: List[str]) -> List[Dict]:
+def search_chunks(query: str, top_k: int = 5, alpha: float = 0.75) -> List[Dict]:
     """
-    Filter document chunks to retain only those containing at least one keyword.
-
-    Args:
-        chunks (List[Dict]): List of text chunks with metadata.
-        keywords (List[str]): List of keywords to match.
-
-    Returns:
-        List[Dict]: Filtered list of chunks containing the keywords.
-    """
-    filtered = []
-    for chunk in chunks:
-        text = chunk["text"].lower()
-        if any(keyword in text for keyword in keywords):
-            filtered.append(chunk)
-    return filtered
-
-
-def search_chunks(query: str, top_k: int = 5) -> List[Dict]:
-    """
-    Perform hybrid search: filter chunks by keyword match, then re-rank using semantic similarity.
+    Perform hybrid search using a weighted combination of semantic similarity and keyword overlap.
 
     Args:
         query (str): User query string.
         top_k (int): Number of top results to return.
+        alpha (float): Weight for semantic similarity (between 0 and 1).
 
     Returns:
-        List[Dict]: Top-k relevant chunks based on hybrid scoring.
+        List[Dict]: Top-k most relevant chunks based on combined scoring.
     """
     query_vec = model.encode(query)
     keywords = extract_keywords(query)
 
-    all_chunks = get_all_chunks()
-    filtered_chunks = filter_chunks_by_keywords(all_chunks, keywords)
-
-    candidate_chunks = filtered_chunks if filtered_chunks else all_chunks
-
     scored = []
-    for chunk in candidate_chunks:
+    all_chunks = get_all_chunks()
+
+    for chunk in all_chunks:
         chunk_vec = np.array(chunk["embedding"])
-        score = cosine_similarity(query_vec, chunk_vec)
-        scored.append((score, chunk))
+        semantic_score = cosine_similarity(query_vec, chunk_vec)
+        keyword_overlap = sum(1 for kw in keywords if kw in chunk["text"].lower())
+
+        # Normalize keyword score 
+        keyword_score = keyword_overlap / (len(keywords) or 1)
+
+        # Combine scores
+        final_score = alpha * semantic_score + (1 - alpha) * keyword_score
+        chunk["semantic_score"] = semantic_score
+        chunk["keyword_score"] = keyword_score
+        chunk["final_score"] = final_score
+        scored.append((final_score, chunk))
 
     top_chunks = sorted(scored, key=lambda x: x[0], reverse=True)[:top_k]
     return [chunk for _, chunk in top_chunks]

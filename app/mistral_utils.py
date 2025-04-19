@@ -2,7 +2,6 @@ import os
 from mistralai import Mistral
 
 # Initialize the Mistral client with your API key
-# client = Mistral(api_key="6ArEcq2epyMkLjd4MpLZ1BMeEJl0OOhn")
 api_key = os.environ["MISTRAL_API_KEY"]
 model = "mistral-small-latest"
 client = Mistral(api_key=api_key)
