@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query
 from app.embedding_model import embedding_model as model
 from app.ingestion import process_pdf_files
-from app.mistral_utils import is_search_query_llm, transform_query
+from app.mistral_utils import is_search_query_llm, transform_query, generate_response
 from app.storage import add_chunks  
 from app.search import search_chunks
 from app.postprocessing import deduplicate_chunks, rerank_chunks, truncate_chunks
@@ -42,38 +42,29 @@ async def upload_files(
 
 @app.post("/query")
 async def query_knowledge_base(question: str = Form(...)):
-    # Step 1: Transform the query for clarity 
+    # Step 1: Transform the query to improve retrieval
     transformed = transform_query(question)
-    print("-- transformed ---")
-    print(transformed)
 
-    # Step 2: Decide if KB search is needed 
+    # Step 2: Determine if KB search is needed 
     use_kb = is_search_query_llm(transformed)
 
-    # Step 3: If no KB needed, just ask LLM directly (TODO: waiting on API key)
+    # Step 3: If no KB needed, send the query directly to LLM
     if not use_kb:
-        return {
-            "response": f"(LLM would answer directly: '{transformed}')",
-            "used_knowledge_base": False
-        }
+        response = generate_response(query=question, context="")
+        return response
 
-    # Step 4: Search the knowledge base
+    # Step 4: Retrieve top chunks from knowledge base
     top_chunks = search_chunks(transformed, top_k=5)
 
-    # Step 5: Post-processing
+    # Step 5: Post-processing of chunks
     top_chunks = deduplicate_chunks(top_chunks)
     top_chunks = rerank_chunks(top_chunks, transformed)
     top_chunks = truncate_chunks(top_chunks, max_chars=3000)
     context = "\n\n".join([chunk["text"] for chunk in top_chunks])
 
-    # Step 6: Ask LLM with extra context (TODO: waiting on API key)
-    # response = generate_response(query=transformed, context=context)
-    return {
-        "response": f"(LLM would answer using context: '{transformed}')",
-        "used_knowledge_base": True,
-        "context_preview": context,
-        "sources": [chunk["filename"] for chunk in top_chunks]
-    }
+    # Step 6: Generate LLM response using context
+    response = generate_response(query=transformed, context=context)
+    return response
 
 
 

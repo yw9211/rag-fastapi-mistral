@@ -59,3 +59,28 @@ def transform_query(query: str) -> str:
     ]
     response = client.chat.complete(model=model, messages=messages)
     return response.choices[0].message.content.strip()
+
+
+def generate_response(query: str, context: str = "") -> str:
+    """
+    Generate a response from the Mistral model based on the given query and optional context.
+
+    Args:
+        query (str): The user's question.
+        context (str): Contextual information from the knowledge base (optional).
+
+    Returns:
+        str: The model-generated answer.
+    """
+    if context:
+        prompt = (
+            f"You are a helpful assistant. Use the following context to answer the question. Be brief and polite. \n\n"
+            f"Context:\n{context}\n\n"
+            f"Question: {query}"
+        )
+    else:
+        prompt = query
+
+    messages = [{"role": "user", "content": prompt}]
+    response = client.chat.complete(model=model, messages=messages)
+    return response.choices[0].message.content
