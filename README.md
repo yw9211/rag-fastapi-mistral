@@ -21,11 +21,13 @@ rag-fastapi-mistral/
 │
 ├── requirements.txt           # Python dependencies
 ├── .gitignore                 # Ignore PDFs, .env, __pycache__, etc.
+├── system-diagram.png         # System architecture
 └── README.md                  # Project overview and instructions
 
 ```
 ## System Design
 
+![System Design Diagram](system-diagram.png)
 
 This modular setup allows for easy substitution of models, reranking strategies, or chunking methods without rewriting core components.
 
