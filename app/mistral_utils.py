@@ -1,9 +1,12 @@
 import os
+import numpy as np
 from mistralai import Mistral
+from typing import List
 
 # Initialize the Mistral client with your API key
 api_key = os.environ["MISTRAL_API_KEY"]
 model = "mistral-small-latest"
+embedding_model = "mistral-embed"
 client = Mistral(api_key=api_key)
 
 # System prompt guiding the LLM to classify query intent
@@ -83,3 +86,35 @@ def generate_response(query: str, context: str = "") -> str:
     messages = [{"role": "user", "content": prompt}]
     response = client.chat.complete(model=model, messages=messages)
     return response.choices[0].message.content
+
+def embed_query_mistral(text: str) -> np.ndarray:
+    """
+    Generates a semantic embedding for a query string using Mistral's embedding model.
+
+    Args:
+        text (str): The input query.
+
+    Returns:
+        np.ndarray: A vector embedding of the query.
+    """
+    response = client.embeddings.create(
+        model=embedding_model,
+        inputs=[text]
+    )
+    return np.array(response.data[0].embedding)
+
+def embed_chunks_mistral(chunks: List[str]) -> List[List[float]]:
+    """
+    Generate embeddings for a list of text chunks using Mistral's embedding model.
+
+    Args:
+        chunks (List[str]): List of text chunks.
+
+    Returns:
+        List[List[float]]: List of vector embeddings.
+    """
+    response = client.embeddings.create(
+        model=embedding_model,
+        inputs=chunks
+    )
+    return [item.embedding for item in response.data]

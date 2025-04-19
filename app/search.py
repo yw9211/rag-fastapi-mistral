@@ -1,9 +1,9 @@
-from app.embedding_model import embedding_model as model
 import numpy as np
 import re
 from nltk.corpus import stopwords
 from typing import List, Dict
 from app.storage import get_all_chunks
+from app.mistral_utils import embed_query_mistral
     
 def cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
     """
@@ -48,7 +48,7 @@ def search_chunks(query: str, top_k: int = 5, alpha: float = 0.75) -> List[Dict]
     Returns:
         List[Dict]: Top-k most relevant chunks based on combined scoring.
     """
-    query_vec = model.encode(query)
+    query_vec = embed_query_mistral(query)
     keywords = extract_keywords(query)
 
     scored = []

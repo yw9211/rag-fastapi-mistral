@@ -1,7 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query, Request
-from app.embedding_model import embedding_model as model
 from app.ingestion import process_pdf_files
-from app.mistral_utils import is_search_query_llm, transform_query, generate_response
+from app.mistral_utils import is_search_query_llm, transform_query, generate_response, embed_chunks_mistral
 from app.storage import add_chunks  
 from app.search import search_chunks
 from app.postprocessing import deduplicate_chunks, truncate_chunks
@@ -28,7 +27,7 @@ async def upload_files(
         # Extract and chunk text from the PDF
         chunks = process_pdf_files(file.filename, content, chunk_size=chunk_size, overlap=overlap)
         # Embed all chunks at once
-        embeddings = model.encode(chunks).tolist()
+        embeddings = embed_chunks_mistral(chunks)
         add_chunks(file.filename, chunks, embeddings)
         # Store the filename and number of chunks for this file
         results.append({
