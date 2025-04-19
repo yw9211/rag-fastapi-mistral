@@ -1,10 +1,10 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query, Request
 from app.embedding_model import embedding_model as model
 from app.ingestion import process_pdf_files
 from app.mistral_utils import is_search_query_llm, transform_query, generate_response
 from app.storage import add_chunks  
 from app.search import search_chunks
-from app.postprocessing import deduplicate_chunks, rerank_chunks, truncate_chunks
+from app.postprocessing import deduplicate_chunks, truncate_chunks
 
 # Create FastAPI instance
 app = FastAPI()
@@ -58,7 +58,6 @@ async def query_knowledge_base(question: str = Form(...)):
 
     # Step 5: Post-processing of chunks
     top_chunks = deduplicate_chunks(top_chunks)
-    top_chunks = rerank_chunks(top_chunks, transformed)
     top_chunks = truncate_chunks(top_chunks, max_chars=3000)
     context = "\n\n".join([chunk["text"] for chunk in top_chunks])
 
@@ -66,7 +65,51 @@ async def query_knowledge_base(question: str = Form(...)):
     response = generate_response(query=transformed, context=context)
     return response
 
+@app.post("/debug_query")
+async def debug_query(question: str = Form(...)):
+    debug = {}
 
+    # Step 1: Transform the query to improve retrieval
+    transformed = transform_query(question)
+    debug["original_query"] = question
+    debug["transformed_query"] = transformed
 
+    # Step 2: Determine if KB search is needed 
+    use_kb = is_search_query_llm(question) 
+    debug["used_knowledge_base"] = use_kb
+
+    # Step 3: If no KB needed, send the query directly to LLM
+    if not use_kb:
+        response = generate_response(query=question, context="")
+        debug["response"] = response
+        debug["context_used"] = None
+        debug["top_chunks"] = []
+        return debug
+
+    # Step 4: Retrieve top chunks from knowledge base
+    top_chunks = search_chunks(transformed, top_k=5)
+    debug["initial_top_chunks"] = [
+        {
+            "filename": chunk["filename"],
+            "text_preview": chunk["text"][:250]
+        }
+        for chunk in top_chunks
+    ]
+
+    # Step 5: Post-processing of chunks
+    top_chunks = deduplicate_chunks(top_chunks)
+    debug["after_deduplication"] = [chunk["text"][:250] for chunk in top_chunks]
+
+    top_chunks = truncate_chunks(top_chunks, max_chars=3000)
+    debug["after_truncation"] = [chunk["text"][:250] for chunk in top_chunks]
+
+    # Step 6: Generate LLM response using context
+    context = "\n\n".join([chunk["text"] for chunk in top_chunks])
+    debug["top_chunks_count"] = len(top_chunks)
+
+    response = generate_response(query=transformed, context=context)
+    debug["response"] = response
+
+    return debug
 
 
